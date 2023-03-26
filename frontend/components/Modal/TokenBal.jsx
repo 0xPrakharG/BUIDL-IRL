@@ -1,21 +1,51 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import TokenAbi from "@/ABIs/BuidlToken.json";
 import StakingAbi from "@/ABIs/Staking.json";
-import { useAccount, useContract, useProvider } from "wagmi";
+import { useContract, useProvider } from "wagmi";
 import { ethers } from "ethers";
 
-const TokenBal = () => {
+const TokenBal = ({ smartAccount }) => {
+  const provider = useProvider();
   const [tokenBal, setTokenBal] = useState("0");
   const [rewardBal, setRewardBal] = useState("0");
+  const tokenContract = useContract({
+    address: TokenAbi.address,
+    abi: TokenAbi.abi,
+    signerOrProvider: provider,
+  });
+  const stakingContract = useContract({
+    address: StakingAbi.address,
+    abi: StakingAbi.abi,
+    signerOrProvider: provider,
+  });
 
   useEffect(() => {
-    if (address && stakingContract && tokenContract) {
-      const getReward = async () => {};
-      const getBalance = async () => {};
+    if (smartAccount?.address && stakingContract && tokenContract) {
+      const getReward = async () => {
+        try {
+          const reward = await stakingContract?.calculateReward(
+            smartAccount?.address
+          );
+          setRewardBal(ethers.utils.formatUnits(reward, 18));
+        } catch (err) {
+          console.log(err);
+        }
+      };
+      const getBalance = async () => {
+        try {
+          const tokenBalance = await tokenContract?.balanceOf(
+            smartAccount?.address
+          );
+
+          setTokenBal(ethers.utils.formatEther(tokenBalance));
+        } catch (err) {
+          console.log(err);
+        }
+      };
       getReward();
       getBalance();
     }
-  }, [address, stakingContract, tokenContract]);
+  }, [smartAccount?.address, stakingContract, tokenContract]);
 
   return (
     <div className="flex flex-col text-center justify-center ">
